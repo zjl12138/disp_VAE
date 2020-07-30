@@ -1,3 +1,9 @@
 datasets/*
 .ipynb_checkpoints/*
+__pycache__/*
+decode_result/*
+runs/*
+*.pcd
+*.xyz
+*.png
 

@@ -1,0 +1,108 @@
+import torch
+import torch.utils.data
+import numpy as np
+import os
+import glob
+
+
+class PcdDataset(torch.utils.data.Dataset):
+    def __init__(self, cfg):
+        super().__init__()
+        self.root_dir = cfg['data_locate']
+        self.file_names = glob.glob(self.root_dir + "/*/*.pcd")
+        self.measure_cnt = cfg['measure_cnt']
+
+    def __len__(self):
+        return len(self.file_names)
+
+    def __getitem__(self, index):
+        pcd_path = self.file_names[index]
+        (filepath, tempfilename) = os.path.split(pcd_path)
+        pcd_meta = dict(img_id=os.path.split(filepath)[1], car_id=os.path.splitext(tempfilename)[0])
+
+        pcd_origin = load_pcd_to_ndarray(pcd_path)
+        pcd = np.zeros((self.measure_cnt, 3))
+        index = min(self.measure_cnt, pcd_origin.shape[0])
+
+        mean_pcd, max_pcd = np.zeros((self.measure_cnt, 3)), np.ones((self.measure_cnt, 3))
+        mean_pcd[:index, :] = np.mean(pcd_origin[:index], axis=0, keepdims=True)
+        # min_pcd[:index, :] = np.min(pcd_origin[:index], axis=0, keepdims=True)
+        max_pcd[:index, :] = np.max(pcd_origin[:index], axis=0, keepdims=True)
+        pcd[:index, :] = (pcd_origin[:index] - mean_pcd[:index]) / (max_pcd[:index] - mean_pcd[:index])
+        mean_ref = torch.from_numpy(mean_pcd[0]).float().view(1, 3)
+        max_ref = torch.from_numpy(max_pcd[0]).float().view(1, 3)
+        return torch.from_numpy(pcd).float(), mean_ref, max_ref
+        # N * 3 (expect mesh_cnt * 3 * 10000(N))
+
+
+def read_pcd(pcd_path):
+    lines = []
+    num_points = None
+
+    with open(pcd_path, 'r') as f:
+        for line in f:
+            lines.append(line.strip())
+            if line.startswith('POINTS'):
+                num_points = int(line.split()[-1])
+    assert num_points is not None
+
+    points = []
+    for line in lines[-num_points:]:
+        x, y, z = list(map(float, line.split()))
+        points.append(np.array([x, y, z]))
+    return np.array(points)  # N * 3
+
+
+def load_pcd_to_ndarray(pcd_path):
+    with open(pcd_path) as f:
+        while True:
+            ln = f.readline().strip()
+            if ln.startswith('DATA'):
+                break
+
+        points = np.loadtxt(f)
+        points = points[:, 0:3]
+        return points
+
+
+def write_pcd(points, save_pcd_path):
+    HEADER = '''\
+    # .PCD v0.7 - Point Cloud Data file format
+    VERSION 0.7
+    FIELDS x y z
+    SIZE 4 4 4 
+    TYPE F F F 
+    COUNT 1 1 1 
+    WIDTH {}
+    HEIGHT 1
+    VIEWPOINT 0 0 0 1 0 0 0
+    POINTS {}
+    DATA ascii
+    '''
+    n = len(points)
+    lines = []
+    for i in range(n):
+        x, y, z = points[i]
+        lines.append('{:.6f} {:.6f} {:.6f}'.format(x, y, z))
+    with open(save_pcd_path, 'w') as f:
+        f.write(HEADER.format(n, n))
+        f.write('\n'.join(lines))
+
+
+def write_pcd_from_ndarray(points, save_pcd_path):
+    HEADER = '''\
+    # .PCD v0.7 - Point Cloud Data file format
+    VERSION 0.7
+    FIELDS x y z
+    SIZE 4 4 4 
+    TYPE F F F 
+    COUNT 1 1 1 
+    WIDTH {}
+    HEIGHT 1
+    VIEWPOINT 0 0 0 1 0 0 0
+    POINTS {}
+    DATA ascii
+    '''
+    with open(save_pcd_path, 'w') as f:
+        f.write(HEADER.format(len(points), len(points)) + '\n')
+        np.savetxt(f, points, delimiter=' ', fmt='%f %f %f')
