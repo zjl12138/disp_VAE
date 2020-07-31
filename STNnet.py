@@ -30,7 +30,7 @@ class T_Net(nn.Module):
 
     def forward(self, x):
         # x: B * k * N
-        batchsize = x.size()[0]
+        batch_size = x.size()[0]
         x = F.relu(self.bn1(self.conv1(x)))
         x = F.relu(self.bn2(self.conv2(x)))
         x = F.relu(self.bn3(self.conv3(x)))
@@ -41,7 +41,7 @@ class T_Net(nn.Module):
         x = F.relu(self.bn5(self.fc2(x)))
         x = self.fc3(x)
 
-        iden = torch.from_numpy(np.eye(self.k).flatten().astype(np.float32)).view(1, self.k*self.k).repeat(batchsize, 1)
+        iden = torch.from_numpy(np.eye(self.k).flatten().astype(np.float32)).view(1, self.k*self.k).repeat(batch_size, 1)
         if x.is_cuda:
             iden = iden.cuda()
         x = x + iden  # resnet
@@ -71,7 +71,6 @@ class PointNetfeat(nn.Module):
         x = x.transpose(2, 1)
         x = torch.bmm(x, trans)
         x = x.transpose(2, 1)
-        x_transformed = x.contiguous()  # B * 3 * N
         x = F.relu(self.bn1(self.conv1(x)))
 
         if self.feature_transform:
@@ -88,7 +87,7 @@ class PointNetfeat(nn.Module):
         x = torch.max(x, 2, keepdim=True)[0]
         x = x.view(-1, 1024)  # B * 1024 (global feature)
         if self.global_feat:
-            return x, trans, trans_feat, x_transformed
+            return x, trans, trans_feat
         else:
             x = x.view(-1, 1024, 1).repeat(1, 1, n_pts)
-            return torch.cat([pointfeat, x], 1), trans, trans_feat, x_transformed  # B * 1088 * N
+            return torch.cat([pointfeat, x], 1), trans, trans_feat  # B * 1088 * N

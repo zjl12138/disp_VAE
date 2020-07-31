@@ -6,4 +6,5 @@ runs/*
 *.pcd
 *.xyz
 *.png
+model_ckpt/*
 
