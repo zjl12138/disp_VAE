@@ -12,7 +12,7 @@ warnings.filterwarnings('ignore')
 
 def main():
     USE_GPU = True
-    RUN_PARALLEL = True
+    RUN_PARALLEL = False
     device_ids = [0, 1]
     if USE_GPU and torch.cuda.is_available():
         device = torch.device('cuda')
@@ -25,8 +25,8 @@ def main():
 
     learning_rate = 1e-3
     learning_rate_decay = 0.3
-    cfg = dict(device=device, learning_rate=learning_rate, learning_rate_decay=learning_rate_decay,
-               epochs=5, print_every=2, save_every=2, batch_size=5, measure_cnt=3000, latent_num=128*3,
+    cfg = dict(device=device, learning_rate=learning_rate, learning_rate_decay=learning_rate_decay, epochs=5,
+               print_every=2, save_every=2, batch_size=5, measure_cnt=2500, generate_cnt=2500, latent_num=128*3,
                data_locate="./datasets/pcd_result", save_path="./model_ckpt/", save_pcd_path="./decode_result/",
                tensorboard_path="runs/train_visualization")
 
