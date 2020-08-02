@@ -28,7 +28,7 @@ def main():
     cfg = dict(device=device, learning_rate=learning_rate, learning_rate_decay=learning_rate_decay, epochs=5,
                print_every=2, save_every=2, batch_size=5, measure_cnt=2500, generate_cnt=2500, latent_num=128*3,
                data_locate="./datasets/pcd_result", save_path="./model_ckpt/", save_pcd_path="./decode_result/",
-               tensorboard_path="runs/train_visualization")
+               tensorboard_path="runs/train_visualization", is_val=False)
 
     if not os.path.isdir(cfg['save_path']):
         os.mkdir(cfg['save_path'])

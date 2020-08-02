@@ -120,7 +120,7 @@ class VAEnn(nn.Module):
         if self.training:
             return z_decoded.transpose(2, 1).contiguous(), latent_code, loss
         else:
-            return z_decoded.transpose(2, 1).contiguous(), latent_code
+            return z_decoded.transpose(2, 1).contiguous(), z_mean, z_log_var
 
     def vae_loss(self, input_coordinates, z_decoded):
         batch_size = input_coordinates.size()[0]

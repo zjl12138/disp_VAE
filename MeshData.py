@@ -11,6 +11,7 @@ class PcdDataset(torch.utils.data.Dataset):
         self.root_dir = cfg['data_locate']
         self.file_names = glob.glob(self.root_dir + "/*/*.pcd")
         self.measure_cnt = cfg['measure_cnt']
+        self.is_val = cfg['is_val']
 
     def __len__(self):
         return len(self.file_names)
@@ -31,8 +32,10 @@ class PcdDataset(torch.utils.data.Dataset):
         pcd[:index, :] = (pcd_origin[:index] - mean_pcd[:index]) / (max_pcd[:index] - mean_pcd[:index])
         mean_ref = torch.from_numpy(mean_pcd[0]).float().view(1, 3)
         max_ref = torch.from_numpy(max_pcd[0]).float().view(1, 3)
-        return torch.from_numpy(pcd).float(), mean_ref, max_ref
-        # N * 3 (expect mesh_cnt * 3 * 10000(N))
+        if not self.is_val:
+            return torch.from_numpy(pcd).float(), mean_ref, max_ref  # N * 3
+        else:
+            return torch.from_numpy(pcd).float(), mean_ref, max_ref, pcd_meta
 
 
 def read_pcd(pcd_path):
